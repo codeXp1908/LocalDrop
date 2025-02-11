@@ -1,54 +1,66 @@
-const express = require('express');
-const multer = require('multer');
-const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
+const express = require("express");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+const cors = require("cors");
 
 const app = express();
 const PORT = 3010;
 
-// Enable CORS
+// Enable CORS for frontend to access the backend
 app.use(cors());
-app.use(express.json());
 
-const corsOptions = {
-    origin: '*', // Allow all devices in the network
-    methods: ['GET', 'POST'], // Allow file upload
-    allowedHeaders: ['Content-Type'],
-};
+// Ensure the 'uploads' directory exists
+const uploadDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
 
-app.use(cors(corsOptions));
+// Serve static files (uploaded files) from the 'uploads' directory
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-
-// Storage Configuration for File Uploads
-const uploadFolder = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadFolder)) fs.mkdirSync(uploadFolder);
-
+// Configure multer storage (saving the file with its original name)
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, 'uploads/'),
-    filename: (req, file, cb) => cb(null, file.originalname)
+  destination: (req, file, cb) => {
+    // Save files to the 'uploads' directory
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Use the original filename (no modification)
+    cb(null, file.originalname);
+  }
 });
 
-const upload = multer({ storage });
+// Set up multer for file upload
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // Limit file size to 5MB
+}).single("file");
 
-// Route: File Upload
-app.post('/upload', upload.single('file'), (req, res) => {
-    res.json({ message: 'File uploaded successfully!', filename: req.file.filename });
+// File upload route
+app.post("/upload", (req, res) => {
+  upload(req, res, (err) => {
+    if (err) {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).send("File is too large. Max size is 5MB.");
+      }
+      return res.status(500).send("Error uploading file: " + err.message);
+    }
+    res.status(200).send({ message: "File uploaded successfully!" });
+  });
 });
 
-// Route: Get All Files
-app.get('/files', (req, res) => {
-    fs.readdir(uploadFolder, (err, files) => {
-        if (err) return res.status(500).json({ error: "Error reading files" });
-        res.json(files);
-    });
+// Endpoint to get the list of uploaded files
+app.get("/files", (req, res) => {
+  fs.readdir(uploadDir, (err, files) => {
+    if (err) {
+      return res.status(500).send("Unable to scan directory.");
+    }
+    res.json(files);
+  });
 });
 
-// Route: Download File
-app.get('/download/:filename', (req, res) => {
-    const filePath = path.join(uploadFolder, req.params.filename);
-    res.download(filePath);
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server running at http://192.168.29.188:${PORT}`);
 });
-
-// Start Server
-app.listen(PORT, () => console.log(`Server running at http://192.168.29.188:${PORT}`));
