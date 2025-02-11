@@ -1,0 +1,22 @@
+{
+  "name": "localdrop",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codeXp1908/LocalDrop.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/codeXp1908/LocalDrop/issues"
+  },
+  "homepage": "https://github.com/codeXp1908/LocalDrop#readme",
+  "keywords": [],
+  "description": "A local file sharing application"
+}
